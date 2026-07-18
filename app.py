@@ -10,3 +10,15 @@ st.header("Add Asset")
 
 name = st.text_input("Asset Name")
 category = st.text_input("Category")
+location = st.text_input("Location")
+
+employee = st.text_input("Assigned To")
+
+purchase_date = st.date_input("Purchase Date")
+
+status = st.selectbox(
+    "Status",
+    ["Active", "Inactive", "Disposed"]
+)
+
+if st.button("Save Asset"):
