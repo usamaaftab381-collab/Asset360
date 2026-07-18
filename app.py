@@ -6,48 +6,51 @@ from io import BytesIO
 
 st.set_page_config(
     page_title="Asset360",
-    page_icon="📦",
-    layout="wide"
+    page_icon="📦"
 )
 
-# Database
-conn = sqlite3.connect("assets.db", check_same_thread=False)
+# Fresh database
+conn = sqlite3.connect(":memory:", check_same_thread=False)
 c = conn.cursor()
 
 c.execute("""
-CREATE TABLE IF NOT EXISTS assets(
-id INTEGER PRIMARY KEY AUTOINCREMENT,
-name TEXT,
-category TEXT,
-location TEXT,
-qr TEXT
+CREATE TABLE assets(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT,
+    category TEXT,
+    location TEXT,
+    qr TEXT
 )
 """)
 
 conn.commit()
 
 
-def generate_qr(data):
-    img = qrcode.make(data)
+def create_qr(data):
+    qr = qrcode.make(data)
     buffer = BytesIO()
-    img.save(buffer, format="PNG")
+    qr.save(buffer, format="PNG")
     return buffer.getvalue()
 
 
 st.title("📦 Asset360")
-st.subheader("Fixed Asset Management System")
+st.header("Fixed Asset Management System")
 
 
 menu = st.sidebar.selectbox(
     "Menu",
-    ["Dashboard", "Add Asset", "Search Asset"]
+    [
+        "Dashboard",
+        "Add Asset",
+        "Search Asset"
+    ]
 )
 
 
 # Dashboard
 if menu == "Dashboard":
 
-    st.header("📊 Dashboard")
+    st.subheader("📊 Dashboard")
 
     df = pd.read_sql(
         "SELECT * FROM assets",
@@ -66,9 +69,11 @@ if menu == "Dashboard":
 # Add Asset
 elif menu == "Add Asset":
 
-    st.header("➕ Add Asset")
+    st.subheader("➕ Add Asset")
 
-    name = st.text_input("Asset Name")
+    asset_name = st.text_input(
+        "Asset Name"
+    )
 
     category = st.text_input(
         "Category"
@@ -81,30 +86,38 @@ elif menu == "Add Asset":
 
     if st.button("Save Asset"):
 
-        qr_text = f"{name}-{category}-{location}"
+        qr_data = (
+            asset_name
+            + " | "
+            + category
+            + " | "
+            + location
+        )
 
         c.execute(
             """
             INSERT INTO assets
-            (name,category,location,qr)
-            VALUES (?,?,?,?)
+            (name, category, location, qr)
+            VALUES (?, ?, ?, ?)
             """,
             (
-                name,
+                asset_name,
                 category,
                 location,
-                qr_text
+                qr_data
             )
         )
 
         conn.commit()
 
         st.success(
-            "Asset Added Successfully"
+            "Asset Saved Successfully"
         )
 
 
-        qr_image = generate_qr(qr_text)
+        qr_image = create_qr(
+            qr_data
+        )
 
         st.image(
             qr_image,
@@ -115,20 +128,24 @@ elif menu == "Add Asset":
 # Search
 elif menu == "Search Asset":
 
-    st.header("🔍 Search Asset")
+    st.subheader("🔍 Search Asset")
 
     search = st.text_input(
-        "Enter Asset Name"
+        "Search by Asset Name"
     )
+
 
     if search:
 
         df = pd.read_sql(
-            f"""
+            """
             SELECT * FROM assets
-            WHERE name LIKE '%{search}%'
+            WHERE name LIKE ?
             """,
-            conn
+            conn,
+            params=(
+                "%" + search + "%",
+            )
         )
 
         st.dataframe(df)
