@@ -1,5 +1,4 @@
-Flask
-qrcode
-Pillow
-openpyxl
+streamlit
 pandas
+qrcode
+pillow
